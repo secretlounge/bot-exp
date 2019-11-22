@@ -38,7 +38,7 @@ def init(config, _db, _ch):
 	types += ["audio", "document", "photo", "sticker", "video", "video_note", "voice"]
 
 	cmds = [
-		"start", "stop", "users", "info", "motd", "toggledebug", "togglekarma",
+		"start", "stop", "users", "info", "motd", "toggledebug", "togglekarma", "cleanup",
 		"version", "source", "modhelp", "adminhelp", "modsay", "adminsay", "mod",
 		"admin", "warn", "delete", "remove", "uncooldown", "blacklist", "s", "sign",
 		"tripcode", "settripcode", "t", "tsign"
@@ -418,6 +418,7 @@ def cmd_version(ev):
 	send_answer(ev, rp.Reply(rp.types.PROGRAM_VERSION, version=VERSION), True)
 
 cmd_source = cmd_version # alias
+cmd_cleanup = wrap_core(core.xcleanup)
 
 
 @takesArgument()

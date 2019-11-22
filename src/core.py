@@ -406,6 +406,26 @@ def delete_message(user, msid):
 
 @requireUser
 @requireRank(RANKS.admin)
+def xcleanup(user):
+	msids = set()
+	with ch.lock: # XDDDDDDDDDDDDD
+		for msid, cm in ch.msgs.items():
+			if cm.user_id is None or cm.warned:
+				continue
+			if 1337 in cm.upvoted: # marker
+				continue
+			user2 = db.getUser(id=cm.user_id)
+			if user2.isBlacklisted():
+				msids.add(msid)
+				cm.upvoted.add(1337)
+	logging.info("%s invoked cleanup (matched: %d)", user, len(msids))
+	for msid in msids: # FIXME: this can be hilariously inefficient
+		Sender.delete(msid)
+	text = "<em>%d messages matched, deletion was queued.</em>" % len(msids)
+	return rp.Reply(rp.types.CUSTOM, text=text)
+
+@requireUser
+@requireRank(RANKS.admin)
 def uncooldown_user(user, oid2=None, username2=None):
 	if oid2 is not None:
 		user2 = getUserByOid(oid2)
