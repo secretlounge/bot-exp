@@ -68,3 +68,6 @@ SCORE_BASE_MESSAGE = 0.75
 SCORE_BASE_FORWARD = 1.25
 SCORE_TEXT_CHARACTER = 0.002
 SCORE_TEXT_LINEBREAK = 0.1
+
+# todo: validation
+SALT = int(open("salt.txt", "r").read())
