@@ -15,18 +15,23 @@ sign_last_used = {} # uid -> datetime
 
 blacklist_contact = None
 enable_signing = None
+enable_sigtrips = None
+sigtrip_length = None
 allow_remove_command = None
 media_limit_period = None
 sign_interval = None
 
 def init(config, _db, _ch):
-	global db, ch, spam_scores, blacklist_contact, enable_signing, allow_remove_command, media_limit_period, sign_interval
+	global db, ch, spam_scores, blacklist_contact, enable_signing, allow_remove_command, media_limit_period, sign_interval, enable_sigtrips, sigtrip_length
 	db = _db
 	ch = _ch
 	spam_scores = ScoreKeeper()
 
 	blacklist_contact = config.get("blacklist_contact", "")
 	enable_signing = config["enable_signing"]
+	if "sigtrip_length" in config.keys():
+		enable_sigtrips = config["enable_sigtrips"]
+		sigtrip_length = int(config["sigtrip_length"])
 	allow_remove_command = config["allow_remove_command"]
 	if "media_limit_period" in config.keys():
 		media_limit_period = timedelta(hours=int(config["media_limit_period"]))
@@ -309,11 +314,32 @@ def toggle_karma(user):
 	return rp.Reply(rp.types.BOOLEAN_CONFIG, description="Karma notifications", enabled=not new)
 
 @requireUser
+def get_sigtrip(user):
+	if not enable_sigtrips:
+		return rp.Reply(rp.types.ERR_COMMAND_DISABLED)
+
+	return rp.Reply(rp.types.SIGTRIP_INFO, sigtrip=user.sig)
+
+
+@requireUser
+def set_sigtrip(user, text):
+	if not enable_sigtrips:
+		return rp.Reply(rp.types.ERR_COMMAND_DISABLED)
+
+	if "\n" in text or len(text) > sigtrip_length:
+		return rp.Reply(rp.types.ERR_SIGTRIP_TOO_LONG, max=str(sigtrip_length))
+
+	with db.modifyUser(id=user.id) as user:
+		user.sig = text
+	return rp.Reply(rp.types.SIGTRIP_SET, sig=user.sig)
+
+
+@requireUser
 def get_tripcode(user):
 	if not enable_signing:
 		return rp.Reply(rp.types.ERR_COMMAND_DISABLED)
 
-	return rp.Reply(rp.types.TRIPCODE_INFO, tripcode=user.tripcode)
+	return rp.Reply(rp.types.SIGTRIP_INFO, sig=user.sig)
 
 @requireUser
 def set_tripcode(user, text):

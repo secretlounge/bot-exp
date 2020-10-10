@@ -16,9 +16,10 @@ registered_commands = {}
 
 # settings regarding message relaying
 allow_documents = None
+enable_sigtrips = None
 
 def init(config, _db, _ch):
-	global bot, db, ch, message_queue, allow_documents
+	global bot, db, ch, message_queue, allow_documents, enable_sigtrips
 	if config["bot_token"] == "":
 		logging.error("No telegram token specified.")
 		exit(1)
@@ -31,6 +32,7 @@ def init(config, _db, _ch):
 
 	allow_contacts = config["allow_contacts"]
 	allow_documents = config["allow_documents"]
+	enable_sigtrips = config["enable_sigtrips"]
 
 	types = ["text", "location", "venue"]
 	if allow_contacts:
@@ -41,7 +43,7 @@ def init(config, _db, _ch):
 		"start", "stop", "users", "info", "motd", "toggledebug", "togglekarma", "cleanup",
 		"version", "source", "modhelp", "adminhelp", "modsay", "adminsay", "mod",
 		"admin", "warn", "delete", "remove", "uncooldown", "blacklist", "s", "sign",
-		"tripcode", "settripcode", "t", "tsign"
+		"tripcode", "settripcode", "t", "tsign", "sig", "flag"
 	]
 	for c in cmds: # maps /<c> to the function cmd_<c>
 		c = c.lower()
@@ -422,6 +424,16 @@ def cmd_tripcode(ev, arg):
 
 cmd_settripcode = cmd_tripcode # legacy alias
 
+@takesArgument(optional=True)
+def cmd_sig(ev, arg):
+	c_user = UserContainer(ev.from_user)
+
+	if arg == "":
+		send_answer(ev, core.get_sigtrip(c_user))
+	else:
+		send_answer(ev, core.set_sigtrip(c_user, arg))
+
+cmd_flag = cmd_sig # legacy alias
 
 def cmd_modhelp(ev):
 	send_answer(ev, rp.Reply(rp.types.HELP_MODERATOR), True)
@@ -536,7 +548,9 @@ def relay(ev):
 		return send_answer(ev, msid) # don't relay message, instead reply
 
 	user = db.getUser(id=ev.from_user.id)
-
+	if enable_sigtrips:
+                if user.sig:
+                        ev.text = (rp.Reply(rp.types.SIGTRIPPED_MSG, sig=user.sig, text=rp.formatForTelegram(ev.text)))
 	# find out which message is being replied to
 	reply_msid = None
 	if ev.reply_to_message is not None:

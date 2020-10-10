@@ -19,7 +19,7 @@ class SystemConfig():
 USER_PROPS = (
 	"id", "username", "realname", "rank", "joined", "left", "lastActive",
 	"cooldownUntil", "blacklistReason", "warnings", "warnExpiry", "karma",
-	"hideKarma", "debugEnabled", "tripcode"
+	"hideKarma", "debugEnabled", "tripcode", "sig"
 )
 
 class User():
@@ -34,6 +34,7 @@ class User():
 		self.lastActive = None # datetime
 		self.cooldownUntil = None # datetime?
 		self.blacklistReason = None # str?
+		self.sig = None # signature -- non-unique tripcodes
 		self.warnings = None # int
 		self.warnExpiry = None # datetime?
 		self.karma = None # int
@@ -185,7 +186,7 @@ class JSONDatabase(Database):
 	def _userToDict(user):
 		props = ["id", "username", "realname", "rank", "joined", "left",
 			"lastActive", "cooldownUntil", "blacklistReason", "warnings",
-			"warnExpiry", "karma", "hideKarma", "debugEnabled", "tripcode"]
+			 "warnExpiry", "karma", "hideKarma", "debugEnabled", "tripcode", "sig"]
 		d = {}
 		for prop in props:
 			value = getattr(user, prop)
@@ -198,7 +199,7 @@ class JSONDatabase(Database):
 		if d is None: return None
 		props = ["id", "username", "realname", "rank", "blacklistReason",
 			"warnings", "karma", "hideKarma", "debugEnabled"]
-		props_d = [("tripcode", None)]
+		props_d = [("tripcode", None), ("sig", None)]
 		dateprops = ["joined", "left", "lastActive", "cooldownUntil", "warnExpiry"]
 		user = User()
 		for prop in props:
@@ -319,12 +320,15 @@ CREATE TABLE IF NOT EXISTS `users` (
 	`hideKarma` TINYINT NOT NULL,
 	`debugEnabled` TINYINT NOT NULL,
 	`tripcode` TEXT,
+	`sig` TEXT,
 	PRIMARY KEY (`id`)
 );
 			""".strip())
 			# migration
 			if not row_exists("users", "tripcode"):
 				self.db.execute("ALTER TABLE `users` ADD `tripcode` TEXT")
+			if not row_exists("users", "sig"):
+				self.db.execute("ALTER TABLE `users` ADD `sig` TEXT")
 	def getUser(self, id=None):
 		if id is None:
 			raise ValueError()

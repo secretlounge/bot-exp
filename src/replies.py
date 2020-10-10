@@ -31,6 +31,7 @@ types = NumericEnum([
 	"BOOLEAN_CONFIG",
 	"SIGNED_MSG",
 	"TSIGNED_MSG",
+	"SIGTRIPPED_MSG",
 
 	"CHAT_JOIN",
 	"CHAT_LEAVE",
@@ -44,6 +45,8 @@ types = NumericEnum([
 	"KARMA_NOTIFICATION",
 	"TRIPCODE_INFO",
 	"TRIPCODE_SET",
+	"SIGTRIP_INFO",
+	"SIGTRIP_SET",
 
 	"ERR_COMMAND_DISABLED",
 	"ERR_NO_REPLY",
@@ -61,6 +64,7 @@ types = NumericEnum([
 	"ERR_INVALID_TRIP_FORMAT",
 	"ERR_NO_TRIPCODE",
 	"ERR_MEDIA_LIMIT",
+	"ERR_SIGTRIP_TOO_LONG",
 
 	"USER_INFO",
 	"USER_INFO_MOD",
@@ -114,6 +118,13 @@ format_strs = {
 		"<b>tripcode</b>: " + ("<code>{tripcode!x}</code>" if tripcode is not None else "unset"),
 	types.TRIPCODE_SET: em("Tripcode set. It will appear as: ") + "<b>{tripname!x}</b> <code>{tripcode!x}</code>",
 
+	types.SIGTRIP_INFO: lambda sigtrip, **_:
+		"<b>sigtrip</b>: " + ("<code>{sig!x}</code>" if sigtrip is not None else "unset"),
+	types.SIGTRIP_SET: em("Sigtrip set. It will appear as: ") + "<b>{sig!x}</b>",
+	types.SIGTRIPPED_MSG: "<b>{sig!x}</b>:\n"+
+		"{text!x}",
+
+
 	types.ERR_COMMAND_DISABLED: em("This command has been disabled."),
 	types.ERR_NO_REPLY: em("You need to reply to a message to use this command."),
 	types.ERR_NOT_IN_CACHE: em("Message not found in cache... (24h passed or bot was restarted)"),
@@ -134,6 +145,8 @@ format_strs = {
 		"<code>name#pass</code>" + em("."),
 	types.ERR_NO_TRIPCODE: em("You don't have a tripcode set."),
 	types.ERR_MEDIA_LIMIT: em("You can't send media or forward messages at this time, try again later."),
+	types.ERR_SIGTRIP_TOO_LONG:
+		em("Given sigtrip is too long, you may only include a maximum of {max!x} characters."),
 
 	types.USER_INFO: lambda warnings, cooldown, **_:
 		"<b>id</b>: {id}, <b>username</b>: {username!x}, <b>rank</b>: {rank_i} ({rank})\n"+
