@@ -450,6 +450,18 @@ def xcleanup(user):
 	text = "<em>%d messages matched, deletion was queued.</em>" % len(msids)
 	return rp.Reply(rp.types.CUSTOM, text=text)
 
+
+@requireUser
+@requireRank(RANKS.admin)
+def unban_user(user,user_id):
+	with db.modifyUser(id=user_id) as user2:
+		if user.rank > RANKS.user and user2.rank == RANKS.banned:
+			user2.unsetBlacklisted()
+	Sender.stop_invoked(user2) # do this before queueing new messages below
+	logging.info("%s was unbanned by %s", user2, user)
+	return rp.Reply(rp.types.SUCCESS)
+
+
 @requireUser
 @requireRank(RANKS.admin)
 def uncooldown_user(user, oid2=None, username2=None):

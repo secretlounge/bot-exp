@@ -60,7 +60,7 @@ def init(config, _db, _ch):
 		"start", "stop", "users", "info", "motd", "toggledebug", "togglekarma", "cleanup",
 		"version", "source", "modhelp", "adminhelp", "modsay", "adminsay", "mod",
 		"admin", "warn", "delete", "remove", "uncooldown", "blacklist", "s", "sign",
-		"tripcode", "settripcode", "t", "tsign", "sig", "flag"
+		"tripcode", "settripcode", "t", "tsign", "sig", "flag", "unban"
 	]
 	for c in cmds: # maps /<c> to the function cmd_<c>
 		c = c.lower()
@@ -555,6 +555,13 @@ def cmd_motd(ev, arg):
 cmd_toggledebug = wrap_core(core.toggle_debug)
 cmd_togglekarma = wrap_core(core.toggle_karma)
 
+
+
+@takesArgument()
+def cmd_unban(ev, arg):
+	c_user = UserContainer(ev.from_user)
+	return send_answer(ev, core.unban_user(c_user, arg), True)
+
 @takesArgument(optional=True)
 def cmd_tripcode(ev, arg):
 	c_user = UserContainer(ev.from_user)
@@ -678,12 +685,13 @@ def relay(ev):
 		elif ev.text.strip() == "+1":
 			return plusone(ev)
 	# manually handle signing / tripcodes for media since captions don't count for commands
-	if not is_forward(ev) and ev.content_type in CAPTIONABLE_TYPES and ev.caption.startswith("/"):
-		c, arg = split_command(ev.caption)
-		if c in ("s", "sign"):
-			return relay_inner(ev, caption_text=arg, signed=True)
-		elif c in ("t", "tsign"):
-			return relay_inner(ev, caption_text=arg, tripcode=True)
+	if not is_forward(ev) and ev.content_type in CAPTIONABLE_TYPES and ev.caption:
+		if ev.caption.startswith("/"):
+		    c, arg = split_command(ev.caption)
+		    if c in ("s", "sign"):
+			    return relay_inner(ev, caption_text=arg, signed=True)
+		    elif c in ("t", "tsign"):
+			    return relay_inner(ev, caption_text=arg, tripcode=True)
 
 	relay_inner(ev)
 
