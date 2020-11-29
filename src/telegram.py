@@ -10,12 +10,14 @@ from src.util import MutablePriorityQueue, genTripcode
 from src.globals import *
 
 # module constants
-MEDIA_FILTER_TYPES = ("photo", "document", "video", "sticker")
-CAPTIONABLE_TYPES = ("photo", "audio", "document", "video", "voice")
+MEDIA_FILTER_TYPES = ("photo", "animation", "document", "video", "sticker")
+CAPTIONABLE_TYPES = ("photo", "audio", "animation", "document", "video", "voice")
 HIDE_FORWARD_FROM = set([
 	"anonymize_bot", "AnonFaceBot", "AnonymousForwarderBot", "anonomiserBot",
 	"anonymous_forwarder_nashenasbot", "anonymous_forward_bot", "mirroring_bot",
 	"anonymizbot", "ForwardsCoverBot", "anonymousmcjnbot", "MirroringBot",
+	"anonymousforwarder_bot", "anonymousForwardBot", "anonymous_forwarder_bot",
+	"anonymousforwardsbot", "HiddenlyBot", "ForwardCoveredBot",
 ])
 VENUE_PROPS = ("title", "address", "foursquare_id", "foursquare_type", "google_place_id", "google_place_type")
 
@@ -54,7 +56,9 @@ def init(config, _db, _ch):
 	types = ["text", "location", "venue"]
 	if allow_contacts:
 		types += ["contact"]
-	types += ["audio", "document", "photo", "sticker", "video", "video_note", "voice"]
+	if allow_documents:
+		types += ["document"]
+	types += ["animation", "audio", "photo", "sticker", "video", "video_note", "voice"]
 
 	cmds = [
 		"start", "stop", "users", "info", "motd", "toggledebug", "togglekarma", "cleanup",
@@ -254,9 +258,10 @@ def formatter_replace_links(ev, fmt: FormattedMessageBuilder):
 		return
 	for ent in entities:
 		if ent.type == "text_link":
+			if ent.url.startswith("tg://"):
+				continue # doubt anyone needs these
 			if "://t.me/" in ent.url and "?start=" in ent.url:
-				# deep links are ugly to look at and likely not important
-				continue
+				continue # deep links look ugly and are likely not important
 			fmt.append("\n(%s)" % ent.url)
 
 # Add inline links for >>>/name/ syntax depending on configuration
@@ -370,6 +375,8 @@ def resend_message(chat_id, ev, reply_to=None, force_caption: FormattedMessage=N
 		for prop in ("performer", "title"):
 			kwargs[prop] = getattr(ev.audio, prop)
 		return bot.send_audio(chat_id, ev.audio.file_id **kwargs)
+	elif ev.content_type == "animation":
+		return bot.send_animation(chat_id, ev.animation.file_id, **kwargs)
 	elif ev.content_type == "document":
 		return bot.send_document(chat_id, ev.document.file_id, **kwargs)
 	elif ev.content_type == "video":
@@ -685,24 +692,19 @@ def relay(ev):
 		elif ev.text.strip() == "+1":
 			return plusone(ev)
 	# manually handle signing / tripcodes for media since captions don't count for commands
-	if not is_forward(ev) and ev.content_type in CAPTIONABLE_TYPES and ev.caption:
-		if ev.caption.startswith("/"):
-		    c, arg = split_command(ev.caption)
-		    if c in ("s", "sign"):
-			    return relay_inner(ev, caption_text=arg, signed=True)
-		    elif c in ("t", "tsign"):
-			    return relay_inner(ev, caption_text=arg, tripcode=True)
+	if not is_forward(ev) and ev.content_type in CAPTIONABLE_TYPES and (ev.caption or "").startswith("/"):
+		c, arg = split_command(ev.caption)
+		if c in ("s", "sign"):
+			return relay_inner(ev, caption_text=arg, signed=True)
+		elif c in ("t", "tsign"):
+			return relay_inner(ev, caption_text=arg, tripcode=True)
 
 	relay_inner(ev)
 
 # relay the message `ev` to other users in the chat
 # `caption_text` can be a FormattedMessage that overrides the caption of media
 # `signed` and `tripcode` indicate if the message is signed or tripcoded respectively
-def relay_inner(ev, *, caption_text=None, signed=False, sigtripped=False, tripcode=False):
-	# filter disallowed media types
-	if not allow_documents and ev.content_type == "document" and ev.document.mime_type not in ("image/gif", "video/mp4"):
-		return
-
+def relay_inner(ev, *, caption_text=None, signed=False, tripcode=False):
 	is_media = is_forward(ev) or ev.content_type in MEDIA_FILTER_TYPES
 	msid = core.prepare_user_message(UserContainer(ev.from_user), calc_spam_score(ev),
 		is_media=is_media, signed=signed, tripcode=tripcode)
