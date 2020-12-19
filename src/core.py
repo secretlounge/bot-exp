@@ -1,4 +1,5 @@
 import logging
+import regex
 from datetime import datetime, timedelta
 from threading import Lock
 
@@ -330,7 +331,7 @@ def set_sigtrip(user, text):
 	if not enable_sigtrips:
 		return rp.Reply(rp.types.ERR_COMMAND_DISABLED)
 
-	if "\n" in text or len(text) > sigtrip_length:
+	if "\n" in text or len(regex.findall(r'\X', text)) > sigtrip_length:
 		return rp.Reply(rp.types.ERR_SIGTRIP_TOO_LONG, max=str(sigtrip_length))
 
 	with db.modifyUser(id=user.id) as user:
