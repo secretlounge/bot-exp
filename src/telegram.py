@@ -30,11 +30,12 @@ registered_commands = {}
 
 # settings
 allow_documents = None
+allow_spam = None
 enable_sigtrips = None
 linked_network: dict = None
 
 def init(config, _db, _ch):
-	global bot, db, ch, message_queue, allow_documents, linked_network, enable_sigtrips
+	global bot, db, ch, message_queue, allow_documents, linked_network, enable_sigtrips, allow_spam
 	if config["bot_token"] == "":
 		logging.error("No telegram token specified.")
 		exit(1)
@@ -51,6 +52,7 @@ def init(config, _db, _ch):
 	allow_documents = config["allow_documents"]
 	enable_sigtrips = config["enable_sigtrips"]
 	linked_network = config.get("linked_network")
+	allow_spam = config.get("allow_spam")
 	if linked_network is not None and not isinstance(linked_network, dict):
 		logging.error("Wrong type for 'linked_network'")
 		exit(1)
@@ -176,6 +178,8 @@ def allow_message_text(text):
 
 # determine spam score for message `ev`
 def calc_spam_score(ev):
+	if allow_spam:
+		return 0
 	if not allow_message_text(ev.text) or not allow_message_text(ev.caption):
 		return 999
 
