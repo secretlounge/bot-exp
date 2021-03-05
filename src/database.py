@@ -62,7 +62,7 @@ class User():
 	def isBlacklisted(self):
 		return self.rank < 0
 	def getObfuscatedId(self):
-		salt = date.today().toordinal() + SALT
+		salt = date.today().toordinal()
 		if salt & 0xff == 0: salt >>= 8 # zero bits are bad for hashing
 		value = (self.id * salt) & 0xffffff
 		alpha = "0123456789abcdefghijklmnopqrstuv"
